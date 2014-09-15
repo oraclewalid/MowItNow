@@ -1,0 +1,148 @@
+<html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>MowitNNNNNNNNNNNooooooooooooooooowwwwwwwwwwwwwwwwww</title>
+  <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.4.min.js"></script>
+  <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
+</head>
+<body>
+<div>
+  <div>
+    <textarea id="instructions" rows="10" cols="50">
+5 5
+1 2 N
+GAGAGAGAA
+3 3 E
+AADAADADDA
+    </textarea>
+  </div>
+  <div>
+    <button id="go" onclick="MowItNow.connect();">GO00000000000000000!</button>
+  </div>
+</div>
+<div id="console-container" style="float:left">
+  <div id="console">MowItNow event console :</div>
+</div>
+</body>
+<style type="text/css">
+  body {
+    background: orange;
+  }
+
+  canvas {
+    background: #fff;
+    margin: 20px;
+  }
+
+  canvas {
+    position: absolute; /** quand un developeur  java fait du css ... ca pique les yeux !!!!**/
+    left: 750px;
+    top: 100px;
+  }
+
+</style>
+
+
+<script type="text/javascript">
+
+  var MowItNow = {};
+  MowItNow.mowers = {};
+  MowItNow.context = null;
+  MowItNow.width = 0;
+  MowItNow.height = 0;
+  MowItNow.marge = 10;
+  MowItNow.mowerDimension = 20;
+
+  MowItNow.drawMower = function (mower) {
+    var imageObj = new Image();
+    imageObj.src = mower.orientation.concat('-arrow.png');
+    imageObj.onload = function () {
+      MowItNow.context.drawImage(imageObj, mower.x * 100, MowItNow.height - mower.y * 100, MowItNow.mowerDimension, MowItNow.mowerDimension);
+    };
+  };
+
+  MowItNow.drawAllMower = function () {
+    for (var key in MowItNow.mowers) {
+      if (MowItNow.mowers.hasOwnProperty(key)) {
+        MowItNow.drawMower(MowItNow.mowers[key]);
+      }
+    }
+  };
+
+  //inspired from http://jsfiddle.net/h2yJn/66/
+
+  MowItNow.drawArea = function () {
+
+    //size of canvas
+    var cw = MowItNow.width + MowItNow.marge * 2;
+    var ch = MowItNow.height + MowItNow.marge * 2;
+
+    $('canvas').remove();
+    var canvas = $('<canvas/>').attr({width: cw, height: ch}).appendTo('body');
+    MowItNow.context = canvas.get(0).getContext("2d");
+
+    for (var x = 0; x <= MowItNow.width; x += 100) {
+      MowItNow.context.moveTo(0.5 + x + MowItNow.marge, MowItNow.marge);
+      MowItNow.context.lineTo(0.5 + x + MowItNow.marge, MowItNow.height + MowItNow.marge);
+    }
+
+    for (var x = 0; x <= MowItNow.height; x += 100) {
+      MowItNow.context.moveTo(MowItNow.marge, 0.5 + x + MowItNow.marge);
+      MowItNow.context.lineTo(MowItNow.width + MowItNow.marge, 0.5 + x + MowItNow.marge);
+    }
+    MowItNow.context.strokeStyle = "black";
+    MowItNow.context.stroke();
+  };
+
+  MowItNow.connect = (function () {
+
+    MowItNow.socket = new SockJS("/mowitnow");
+
+    MowItNow.socket.onopen = function () {
+
+      log('Info: WebSocket connection opened.');
+      var instructions = $('#instructions').val();
+      MowItNow.socket.send(instructions);
+      log('INFO : send instructions : ' + instructions);
+    };
+
+    MowItNow.socket.onclose = function () {
+
+      log('Info: WebSocket connection closed.');
+    };
+
+    MowItNow.socket.onmessage = function (event) {
+
+      log('INFO : Received: ' + event.data);
+      var message = JSON.parse(event.data);
+      switch (message.type) {
+        case 'INIT':
+          MowItNow.width = message.x * 100;
+          MowItNow.height = message.y * 100;
+          MowItNow.drawArea();
+          break;
+        case 'UPDATE':
+          MowItNow.mowers[message.id] = message;
+          MowItNow.drawArea();
+          MowItNow.drawAllMower();
+          break;
+        case 'ERROR':
+          log('BBBBBBBBBBBBOOOOOOOOOOOOOOOOOOOOOOOOOMMMMMMMMMMMMM');
+          break;
+      }
+    };
+  });
+
+  function log(message) {
+    var console = document.getElementById('console');
+    var p = document.createElement('p');
+    p.style.wordWrap = 'break-word';
+    p.appendChild(document.createTextNode(message));
+    console.appendChild(p);
+    while (console.childNodes.length > 15) {
+      console.removeChild(console.firstChild);
+    }
+    console.scrollTop = console.scrollHeight;
+  }
+</script>
+</html>
